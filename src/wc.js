@@ -1,280 +1,295 @@
-import CMP from './CMP'
+import { conf, cmps, remainCmps, waitingSubscribers, browserActions, allowWeblize } from './variable'
 
-import TopicCenter from './topic-center'
+import { events } from './eventbus'
 
-import {
-    print,
-    extend,
-    isObject
-} from './util'
+import Component from './cmp'
 
-import { ERRFLAG, conf, allowUsage, allowBrowserTopics, injectors, topics, remain_cmps, cmps, STATE } from './variable'
+import { isArray, isFunction } from './util'
 
-const wc = {}
+import EventTracer from './eventbus-tracer'
 
-function loadCombo(needComboCmps, needload) {
+/**
+wc('id')
+    .opts({})
+    .at('ctx')
+    .sub('cmp1',['text1','text2'],'out1')
+    .sub('cmp1',['text4','text3'],'out2')
+    .sub('cmp2',['text4','text3'],'out2')
+    .sub('cmp2',['text4','text3'],'out2')
+ */
+let wc = window.wc = function wc(id) {
+    return new wcExt.ctor(id)
+}
 
-    if (!conf.combo) return
+// The current version of wc being used
+wc.version = '0.0.1'
 
-    l = needComboCmps ? needComboCmps.length : 0
+/**
+ * wc配置
+ * 
+ *  options配置项清单如下:
+ *     `combo`: [Boolean] 是否启用在线combo (Default:false)
+ *     `thresold`:[`Number`] 距离底部
+ *     `tpl` [`Boolean`] 是否启用模板操作 (Default:false)
+ *     `anim`:[`Boolean`] 是否启用动画操作 (Default:false)
+ *     `$`:[`Boolean`] 是否启用动画操作 (Default:false)
+ *     `http`:[`Boolean`] 是否启用动画操作 (Default:false)
+ *     `cache`:[`Boolean`] 是否启用动画操作 (Default:false)
+ *
+ * @param {Object} configMeta 客户端配置
+ */
+wc.config = function(configMeta) {
 
-    if (!l) return
-
-    let cmpids = needComboCmps.join(',')
-
-    for (l = needComboCmps.length; l--;) {
-        cmps[needComboCmps[l]].state = STATE.fetching
+    if (configMeta.debug) {
+        wc.data = {
+            cmps: cmps,
+            waitingSubscribers: waitingSubscribers,
+            events: events
+        }
     }
-
-    let sperator = conf.combo.sperator || '??'
-
-    if (conf.combo.css_root) {
-        injectors.res.fetch(conf.combo.css_root + sperator + cmpids)
-    }
-    if (conf.combo.js_root) {
-        injectors.res
-            .fetch(conf.combo.js_root + sperator + cmpids)
-            .then(() => {
-                for (l = needComboCmps.length; l--;) {
-                    if (needload) {
-                        CMP.load(cmps[needComboCmps[l]])
-                        remain_cmps[needComboCmps[l]] && delete remain_cmps[needComboCmps[l]]
-                    } else {
-                        cmps[needComboCmps[l]].state = STATE.fetched
-                    }
-                }
-            })
-    }
+    conf.threshold = configMeta.threshold || 0
+    conf.root = configMeta.root
+    conf.combo = configMeta.combo
 }
 
 /**
- * 定义组件
- * @param  {String} id      组件id
- * @param  {Object-KV} options 组件初始配置项
- * @param  {Function} factory 组件的工厂构造方法
- * @return {WC}         WC对象
+ * 组件定义
+ *
+ * @param {String} id 组件id
+ * @param {Object} options 组将对外配置项
+ * @param {Function} factory 组件工厂
+ *
  */
-wc.cmp = function(id, options, factory) {
-    if (!id)
-        return print(ERRFLAG.E101)
+wc.define = function(id, options, factory) {
+
+    if (!id) return
 
     let cmp = cmps[id]
 
     if (!cmp) {
-        cmp = cmps[id] = new CMP(id, options, factory)
+
+        cmp = cmps[id] = new Component(id, options, factory)
+
     } else {
+
         //合并opts和更新factory
         cmp.fac = factory
-        cmp.opts = extend(cmp.opts, options)
+
+        options && (cmp.opts = cmp.opts ? Object.assign(cmp.opts, options) : options)
+
     }
 
-    cmp.state = STATE.fetched
-
-    return this
+    cmp.state = 2
 }
 
 /**
- *
- * 初始化配置
- *   options配置项清单如下:
- *     `combo`: [Boolean] 是否启用在线combo (Default:false)
- *     `tpl` [`Boolean`] 是否启用模板操作 (Default:false)
- *     `anim`:[`Boolean`] 是否启用动画操作 (Default:false)
- *     `cmps`:[`Array`] 当前页面的组件之间的依赖配置
- *            `id`:[`String`] 组件id
- *            `deps`: 
- *              {   
- *                  'topic': [
- *                      {'id':'','topics':'',__trace:{
- *                          'time': cbdatas --- [[sub_fb_cbs]]
- *                      }}
- *                  ]{
- *                      '__trace':{
- *                          'time': data,
- *                          'time2': data2,
- *                      }
- *                  }
- *              },
- *            `opts`: {''} 组件在当前页面宿主中的配置
- *            `ctx`: 组件的内嵌容器元素的元素选择器字符串,
- *            `usage`:
- *            [
- *              {
- *                `ctx`:[`String`] 组件在当前页面所在的容器
- *                `opts`: [`Object-KV`] 组件在当前容器的配置--宿主环境配置
- *              }
- *            ]
- * @param  {Object-KV} options 配置项
- * @return {WC}
+ * 加载组件基于宿主环境的情况下
+ * 
+ * @param {String} action 浏览器操作名称
+ * @param {any} data 传输数据
+ * @param {Function} isInVisiableFn 是否在可视区域内的方法
  */
-wc.conf = function(options) {
+wc.load = function(action, data, isInVisiableFn) {
 
-    for (let usage, l = allowUsage.length; l--;) {
-        conf[usage = allowUsage[l]] = !(usage in options) ? true : !!options[usage]
+    if (!action) return
+
+    if (!browserActions.includes(action)) return
+
+    let cmp, loadedcmp, waitingFetchCMPs = []
+
+    if (remainCmps && remainCmps.length) {
+
+        for (let l = remainCmps.length; l--;) {
+
+            cmp = cmps[remainCmps[l]]
+
+            if (cmp.state === 2) {
+                Component.load(cmp)
+                remainCmps.splice(l, 1)
+                loadedcmp = true
+                continue
+            } else if (cmp.state === 0 && cmp.ctx && cmp.http && isInVisiableFn && isInVisiableFn(cmp.ctx)) {
+                waitingFetchCMPs.push(cmp.id)
+            }
+            loadedcmp = false
+        }
+
+    } else {
+        for (let cmpid in cmps) {
+            if ('__env__' === cmpid) continue
+            cmp = cmps[cmpid]
+            switch (cmp.state) {
+                case 0: //unftech
+                    if (cmp.state === 0 && cmp.ctx && cmp.http && isInVisiableFn && isInVisiableFn(cmp.ctx)) waitingFetchCMPs.push(cmp.id)
+                case 1: //fetching
+                    remainCmps.push(cmp.id)
+                    loadedcmp = false
+                    break
+                case 2: //fetched
+                    Component.load(cmp)
+                case 3:
+                default:
+                    //loaded
+                    loadedcmp = true
+                    break
+            }
+        }
     }
 
-    conf.util = true
-
-    conf.threshold = options.threshold || 0
-
-    let item,
-        l = allowUsage.length
-        //如果有则加载,没有的话就执行强制注入
-    for (; l--;) {
-        item = allowUsage[l]
-        conf[item] && Object.defineProperty(CMP.prototype, item, {
-            writable: false,
-            configurable: false,
-            value: injectors[item]
-        })
+    if (waitingFetchCMPs && waitingFetchCMPs.length && Component.prototype.http) {
+        let url, len = waitingFetchCMPs.length
+        if (conf.combo) {
+            if (conf.combo.js) {
+                url = conf.combo.js(waitingFetchCMPs, conf.root)
+                for (; len--;) cmps[waitingFetchCMPs[len]].state = 1
+                Component.prototype.http(url)
+                    .then(() => { for (len = waitingFetchCMPs.length; len--;) Component.load(cmps[waitingFetchCMPs[len]]) })
+                    .catch(() => { for (len = waitingFetchCMPs.length; len--;) cmps[waitingFetchCMPs[len]].state = 1 })
+            }
+            if (conf.combo.css) {
+                url = conf.combo.css(waitingFetchCMPs, conf.root)
+                Component.prototype.http(url)
+            }
+            if (conf.combo.tpl) {
+                url = conf.combo.tpl(waitingFetchCMPs, conf.root)
+                Component.prototype.http(url)
+            }
+        } else {
+            for (; len--;) {
+                url = conf.root + waitingFetchCMPs[len] + '.js'
+                cmp = cmps[waitingFetchCMPs[len]]
+                cmp.state = 1
+                cmp.http(url).then(() => Component.load(cmp)).catch(() => { cmp.state = 0 })
+            }
+        }
     }
+    loadedcmp && cmps.__env__.pub(action, data) //系统组件主动发布事件
+}
 
-    l = options.cmps.length
+/**
+ * 组件的web化
+ *  1. 给组件增加适应web端的操作:
+ *
+ *          dom:可以操作dom元素
+ *          http: 可以做服务器资源访问
+ *          anim: 动画增强客户端效果
+ *          cache: web端缓存操作
+ *          tpl: web端模板操作
+ *  2.由于组件具备web化之后,便会形成不同类别的组件
+ *      1) 偏元素呈现效果的
+ *      2) 偏服务器端操作的
+ *      3) 偏效果增强的
+ *      等等
+ * 
+ *  组件的web宿主适应性
+ *  > 由于组件是寄生在浏览器这个宿主环境中的,所以必须要和当前宿主形成一个良好的匹配性
+ *
+ *  1.浏览器变化的时候能够有规则的随之变化
+ *  2.组件的装载必须严格按照浏览器宿主的生命周期出现,所有组件的装载是必须依托于当前组件所在浏览器页面的生命周期
+ */
+wc.web = function(usage, handler) {
+    if (allowWeblize.includes(usage) && isFunction(handler)) {
+        Component.prototype[usage] = function() {
+            return handler.apply(this, arguments)
+        }
+    }
+    return wc
+}
 
-    let cmp, items, l2, l3
-
-    for (; l--;) {
-
-        item = options.cmps[l]
-
-        cmp = cmps[item.id]
+let wcExt = wc.prototype = {
+    ctor: function(id) {
+        let cmp = cmps[id]
 
         if (!cmp) {
-            //创建一个CMP对象
-            cmp = new CMP(item.id, item.opts)
-        } else {
-            //更新options
-            cmp.opts = item.opts ? extend(cmp.opts, item.opts) : cmp.opts
+            cmp = cmps[id] = new Component(id)
+            cmp.state = 0
         }
 
-        cmp.deps = item.deps
+        this.cmp = cmp
 
-        if (item.ctx) {
-            cmp.ctx = item.ctx
-        } else {
-            items = item.usage
-            if (items) {
-                let item
-                for (l2 = items.length; l2--;) {
-                    item = items[l2]
-                    if (item.ctx) {
-                        if (!cmp.ctx) {
-                            cmp.ctx = item.ctx
-                            if (item.opts) {
-                                cmp.opts = extend(cmp.opts, item.opts)
-                            }
-                        } else if (cmp.ctx === item.ctx) {
-                            if (item.opts) {
-                                cmp.opts = extend(cmp.opts, item.opts)
-                            }
-                        } else {
-                            let cmpNew = new CMP(cmp.id + item.ctx, item.opts, cmp.fac)
-                            cmpNew.ctx = item.ctx
-                            cmpNew.deps = item.deps
-                            cmps[cmpNew.id] = cmpNew
-                        }
+        return this
+    },
+    /**
+     * 当前坐落在哪个容器上
+     */
+    at: function(ctx, options) {
+        if (ctx) {
+            if (isArray(ctx)) {
+
+                /**
+                 * 如果一个组件坐落在当前页面的做个容器中,即组件出现了复用情况
+                 *
+                 *  例如一个页面多个数据展示列表,但都是用到得了名称`grid`的组件
+                 *
+                 *  此种情况下,需要执行组件copy
+                 *
+                 *  copy的算法: 将内部除id外所有的属性都实现直接复制, 新的组件id以版本号叠加的形式闯将
+                 *
+                 */
+                let len = ctx.length - 1
+                this.cmp.ctx = ctx[len]
+
+                for (; len--;) {
+
+                    this.copy = this.copy || []
+
+                    let newId = this.cmp.id + '_v' + len
+
+                    this.copy.push(cmps[newId] = new Component(newId, options || this.cmp.options, this.cmp.factory))
+                }
+
+            } else {
+                this.cmp.ctx = ctx
+            }
+        }
+
+        return this
+    },
+    /**
+     *
+     * 当前组件主动订阅发布方事件
+     *
+     *  建议发布/订阅的关系
+     *
+     * @param {String} publisherCMPID  发布方组件id
+     * @param {String|Array} publisherEvents 待订阅的发布方的事件列表
+     * @param {String} subscriberEventName 当前这对订阅的发布方事件的关联响应事件
+     */
+    sub: function(publisherCMPID, publisherEvents, subscriberEventName) {
+
+        if (!isArray(publisherEvents)) publisherEvents = [publisherEvents]
+
+        let tracer, len = publisherEvents.length
+
+        for (; len--;) {
+
+            tracer = EventTracer.get(Component.nameFn(publisherCMPID, publisherEvents[len]))
+
+            if (tracer) {
+                tracer.addSub(subscriberEventName, this.cmp.id)
+                if (this.copy && this.copy.length) {
+                    for (let l2 = this.copy.length; l2--;) {
+                        tracer.addSub(subscriberEventName, this.copy[l2].id)
                     }
                 }
+                continue
             }
+
+            tracer = new EventTracer(publisherEvents[len], publisherCMPID)
+
+            tracer.addSub(this.cmp.id, subscriberEventName)
+
+            if (this.copy && this.copy.length) {
+                for (let l2 = this.copy.length; l2--;) {
+                    tracer.addSub(this.copy[l2].id, subscriberEventName)
+                }
+            }
+
+            EventTracer.set(tracer)
         }
-    }
 
-    conf.combo = options.combo
-
-    if (options.debug) {
-        let data = wc.data = {}
-        data.cmps = cmps
-        data.topics = topics
-        data.injectors = injectors
-    }
-
-    return wc
-}
-
-/**
- * 用户自定义替换wc内部的特定用途的对象
- * @param  {String} usage ['http','tpl','$','anim','util']
- * @param  {Function|Object-KV} injectKV 注入对象
- * @param  {Boolean} replace 是否覆盖现有的实现 默认false
- * @return {[type]}       [description]
- */
-wc.inject = function(usage, injectKV, replace) {
-
-    if (arguments.length < 2) {
-        print(ERRFLAG.W102)
         return this
     }
-    if (replace) {
-        injectors[usage] = injectKV
-    } else {
-        if (!isObject(injectKV)) {
-            print(ERRFLAG.W103)
-            return this
-        }
-
-        let oldVal = injectors[usage] || (injectors[usage] = {})
-
-        let extend = usage === 'util' ? oldVal.extend : injectors.util.extend
-
-        if (extend) {
-            extend(oldVal, injectKV)
-        } else {
-            for (let i in injectKV) {
-                oldVal[i] = injectKV
-            }
-        }
-    }
-
-    return wc
 }
 
-/**
- * 发布主题
- * @param  {String} hostTopic   主题名称(宿主作为发布者的主题: ready、load、scroll、resize)
- * @param  {Object} context 数据
- * @return {wc}         [description]
- */
-wc.pub = function(hostTopic, context) {
-
-    //查找当前发布者对应的订阅者,判断他们的状态
-    if (!hostTopic) return this
-
-    if (allowBrowserTopics.includes(hostTopic)) {
-        TopicCenter.emit([hostTopic], context)
-    }
-
-    return this
-}
-
-/**
- * @param {Boolean} loadmore 是否加载更多,当为true的时候表示要加载剩余组件的概念
- */
-wc.load = function(loadmore) {
-
-    let cmp, l, reqids = []
-
-    let isVisable = injectors.util.isInVisualArea
-
-    if (loadmore) {
-        for (l = remain_cmps.length; l--;) {
-            cmp = remain_cmps[l]
-            if (!isVisable(cmp.ctx, conf.threshold)) continue
-            reqids.push(cmp.id)
-        }
-    } else {
-        for (let cmpId in cmps) {
-            cmp = cmps[cmpId]
-            switch (cmp.state) {
-                case STATE.fetched:
-                    CMP.load(cmp)
-                    break
-                case STATE.unfetch:
-                    isVisable(cmp.ctx, conf.threshold) ? reqids.push(cmpId) : remain_cmps.push(cmpId)
-                    break
-            }
-        }
-    }
-    reqids.length && loadCombo(reqids, true)
-}
-
-window.wc = wc
+wcExt.ctor.prototype = wcExt

@@ -1,35 +1,28 @@
-// me.cmp('cmp2', {
-//     text: 'hello2'
-// }, function(it) {
-//     it
-//         .behs('call')
-//         .life('ready', function() {
-//             console.log(1)
-//             it.pub('call', 'hello world')
-//         }).win('onScroll,onResize', function(arr) {
-//             console.log(arr)
-//         })
-// })
-
-
-wc.cmp('cmp2', {}, function() {
+wc.define('cmp2', {}, function() {
 
     var self = this
 
-    this.host('ready', function() {
-            console.log('cmp2-ready');
+    var $ctx = self.$(self.ctx)
 
-            console.log(self.$().html(`<section><button>呼叫cmp1</button></section>`).find('button').on('click', function() {
+    this
+        .env('ready', function() {
+            console.log('cmp2-ready')
+
+            let html = self.tpl('<section><button>{{title}}</button></section>', {
+                title: '求爱'
+            }, true)
+
+            console.log($ctx.html(html).find('button').on('click', function() {
                 self.pub('sendlove', ['i love you'])
             }))
         })
-        .host('scroll', function() {
-            console.log('cmp2-scroll');
+        .env('scroll', function() {
+            console.log('cmp2-scroll')
         })
-        .host('resize', function() {
-            console.log('cmp2-resize');
+        .env('resize', function() {
+            console.log('cmp2-resize')
         })
         .out('test2', function() {
-            console.warn('test2');
+            console.warn('test2')
         })
 })

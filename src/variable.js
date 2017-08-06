@@ -1,42 +1,23 @@
 /**
- * 存储框架所需的基础变量
- */
-
-/**
- * 允许的自定义注入对象的归类
- * @type {Array}
- */
-export const allowUsage = [
-    '$',
-    'http',
-    'tpl',
-    'util',
-    'anim',
-    'cache',
-    'res'
-]
-
-/**
- * 浏览器宿主允许被订阅的主题
- * @type {Array}
- */
-export const allowBrowserTopics = [
-    'ready',
-    'loaded',
-    'scroll',
-    'resize'
-]
-
-/**
- * 组件状态
+ * 所有等待被唤醒的事件键值集合
+ *
+ *  数据结构要求:
+ *  1. 能够实现订阅方所属组件id的快速定位
+ *  2. 能够包含到从发布方到订阅方的过程信息
+ * format:
+ *  {
+ *      "subscriber.cmp":{
+ *             "subscriber.evt":[{
+ *                  "cmp":"cmp2",
+ *                  "evt":"evt1",
+ *                  "data": "data"
+ *             }]
+ *      }
+ *  }
+ *
  * @type {Object}
  */
-export const STATE = {
-    unfetch: 0,
-    fetching: 1,
-    fetched: 2,
-    loaded: 3
-}
+export const waitingSubscribers = {}
 
 /**
  * 框架的组件集合
@@ -44,48 +25,38 @@ export const STATE = {
  */
 export const cmps = {}
 
-/**
- * 剩余的还未fetch的组件集合
- */
-export const remain_cmps = {}
 
 /**
- * 所有主题的存储
- * @type {Object}
+ * 剩余的还未装载成功的组件id列表
+ * @type {[type]}
  */
-export const topics = {}
+export const remainCmps = []
 
 /**
- * 等待被呼叫的主题
+ * 浏览器宿主允许被订阅的主题
+ * @type {Array}
  */
-export const waiting_call = {}
+export const browserActions = [
+    'ready',
+    'loaded',
+    'scroll',
+    'resize'
+]
 
 /**
- * 当前主题发布跟踪对象
+ * 可以被允许注入的
+ * @type {Array}
  */
-export const cur_topic_tracing = {}
+export const allowWeblize = [
+    '$',
+    'http',
+    'tpl',
+    'anim',
+    'cache'
+]
 
 /**
  * 框架的配置信息
  * @type {Object}
  */
 export const conf = {}
-
-/**
- * 框架的注入对象存储地
- * @type {Object}
- */
-export const injectors = {}
-
-/**
- * 异常枚举
- * @type {Object}
- */
-export const ERRFLAG = {
-    'E101': '组件的id不能为空',
-    'E102': '此次调用的恢复过程受阻,由于接收不到恢复信号',
-    'E103': '注入器没有对应的具体实现,请使用wc.inject()来填充此注入器',
-    'W101': '组件对外自定义的注入器不包含在($、http、tpl、util、anim)中',
-    'W102': 'wc.inject()缺少必备参数',
-    'W103': '调用wc.inject()时,如未指定replace=true的条件下,injectKV只能为键值对类型'
-}

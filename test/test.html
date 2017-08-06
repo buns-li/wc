@@ -13,64 +13,28 @@
     </div>
     <div id="div_1" style="width:100px;height: 100px; border:1px solid red;">
     </div>
+    <script src="//cdn.bootcss.com/nunjucks/3.0.1/nunjucks.min.js"></script>
     <script src="//cdn.bootcss.com/jquery/3.2.1/jquery.slim.min.js"></script>
-    <script src="/dist/wc-jquery-fetch-nunjucks.js"></script>
+    <script src="/dist/wc-jq-njk.js"></script>
     <script src="./cmps/cmp1.js"></script>
     <script src="./cmps/cmp2.js"></script>
     <script>
-        wc.conf({
-            debug: false,
-            cmps: [{
-                id: 'cmp1',
-                ctx: '#div_0',
-                opts: {
-                    prop: 1
-                }
-            }, {
-                id: 'cmp2',
-                ctx: '#div_1',
-                opts: {
-                    prop: 2
-                },
-                deps: {
-                    'sendlove': [{
-                        id: 'cmp1',
-                        topics: 'recieve_love'
-                    }]
-                }
-            }]
+        wc.config({
+            debug:true,
+            threshold:100
+        })
+
+        wc.web('tpl',function(tplname,context){
+            return tplname
+        })
+
+        wc('cmp1').at('#div_0',{}).sub('cmp2','sendlove','recieve_love')
+        wc('cmp2').at('#div_1')
+
+        $(document).ready(function(){
+            console.log('test')
         })
     </script>
-    <!-- <script src="../dist/wc-es5.js"></script> -->
-    <!-- <script>
-        me.conf({
-            debug: true,
-            tpl: true,
-            anim: true,
-            cmps: [{
-                id: "cmp2",
-
-                usages: [{
-                    t: 1,
-                    opts: {
-                        text: "hello cmp2"
-                    },
-                    ctx: 'div_0',
-                    rel: {
-                        "call": {
-                            "cmp1": "changeText"
-                        }
-                    }
-                }]
-            }, {
-                id: "cmp1",
-                usages: [{
-                    t: 1,
-                    ctx: 'div_1'
-                }]
-            }]
-        });
-    </script> -->
 </body>
 
 </html>
