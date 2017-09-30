@@ -1,1 +1,0 @@
-wc.web('tpl', (tplname, context, isRaw) => nunjucks[isRaw ? 'renderString' : 'render'](tplname, context))
