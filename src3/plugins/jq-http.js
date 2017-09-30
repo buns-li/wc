@@ -57,19 +57,22 @@ function loadJSCSS(settings, cb) {
 
         // for Old WebKit and Old Firefox
         if (isCSS && (isOldWebKit || !supportOnload)) {
-            setTimeout(function() {
-                    pollCss(nodeP, callback)
-                }, 1) // Begin after nodeP insertion
+            setTimeout(function () {
+                pollCss(nodeP, callback)
+            }, 1) // Begin after nodeP insertion
             return
         }
 
         if (supportOnload) {
             nodeP.onload = onload
-            nodeP.onerror = function() {
-                onload({ uri: uri, node: nodeP })
+            nodeP.onerror = function () {
+                onload({
+                    uri: uri,
+                    node: nodeP
+                })
             }
         } else {
-            nodeP.onreadystatechange = function() {
+            nodeP.onreadystatechange = function () {
                 if (/loaded|complete/.test(nodeP.readyState)) {
                     onload()
                 }
@@ -79,7 +82,7 @@ function loadJSCSS(settings, cb) {
         function onload(error) {
             // Ensure only run once and handle memory leak in IE
             nodeP.onload = nodeP.onerror = nodeP.onreadystatechange = null
-                // Dereference the nodeP
+            // Dereference the nodeP
             nodeP = null
             callback && callback(error)
         }
@@ -105,7 +108,7 @@ function loadJSCSS(settings, cb) {
             }
         }
 
-        setTimeout(function() {
+        setTimeout(function () {
             if (isLoaded) {
                 // Place callback here to give time for style rendering
                 callback && callback()
@@ -127,13 +130,15 @@ wc.web('http', function Request(url, options) {
     let promise
     if (ext === 'css' || ext === 'js') {
         let def = jQ.Deferred()
-        loadJSCSS(url, (err, data) => err ? def.reject(err) : def.resolve('ok'))
+        loadJSCSS(url, err => err ? def.reject(err) : def.resolve('ok'))
         promise = def.promise()
         promise.catch = promise.error || promise.fail
         return promise
     }
 
-    let newOpts = jQ.extend({ url: url }, options)
+    let newOpts = jQ.extend({
+        url: url
+    }, options)
 
     promise = $.ajax(newOpts)
 

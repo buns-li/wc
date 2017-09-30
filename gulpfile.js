@@ -2,29 +2,27 @@
 
 const
 
-    path = require('path'),
+  path = require('path'),
 
-    gulp = require('gulp'),
+  gulp = require('gulp'),
 
-    clean = require('gulp-clean'),
+  clean = require('gulp-clean'),
 
-    rollup = require('rollup').rollup,
+  rollup = require('rollup').rollup,
 
-    commonjs = require('rollup-plugin-commonjs'),
+  commonjs = require('rollup-plugin-commonjs'),
 
-    nodeResolve = require('rollup-plugin-node-resolve'),
+  nodeResolve = require('rollup-plugin-node-resolve'),
 
-    rollbabel = require('rollup-plugin-babel'),
+  rollbabel = require('rollup-plugin-babel'),
 
-    jsmin = require('gulp-uglify'),
+  jsmin = require('gulp-uglify'),
 
-    concat = require('gulp-concat'),
+  concat = require('gulp-concat'),
 
-    rename = require('gulp-rename'),
+  rename = require('gulp-rename'),
 
-    browserSync = require('browser-sync').create(),
-
-    yargs = require('yargs')
+  browserSync = require('browser-sync').create()
 
 // function addIIFEWrapper() {
 
@@ -61,16 +59,15 @@ const
 // }
 
 const rollUpPlugins = [
-        nodeResolve({
-            jsnext: true
-        }),
-        commonjs(),
-        rollbabel({
-            runtimeHelpers: true
-        })
-    ],
-    entryRoot = './src/',
-    entryDist = './dist/'
+    nodeResolve({
+      jsnext: true
+    }),
+    commonjs(),
+    rollbabel({
+      runtimeHelpers: true
+    })
+  ],
+  entryDist = './dist/'
 
 
 // const argvArr = [{
@@ -126,105 +123,70 @@ const rollUpPlugins = [
 // }
 
 gulp.task('clean', () => {
-    return gulp.src('./dist/*')
-        .pipe(clean())
+  return gulp.src('./dist/*')
+    .pipe(clean())
 })
 
 gulp.task('build-base', async function buildBaseWC() {
-    let bundle = await rollup({
-        entry: './src/wc.js',
-        plugins: rollUpPlugins
-    })
-    return bundle.write({
-        format: 'iife',
-        dest: path.join(entryDist, 'wc-core.js')
-    })
-})
-
-gulp.task('build-plugins', async function buildBaseWC() {
-    let bundle = await rollup({
-        entry: './src/plugins/jq-dom.js',
-        plugins: rollUpPlugins
-    })
-
-    let bundle2 = await rollup({
-        entry: './src/plugins/jq-http.js',
-        plugins: rollUpPlugins
-    })
-
-    let bundle3 = await rollup({
-        entry: './src/plugins/njk.js',
-        plugins: rollUpPlugins
-    })
-
-    return Promise.all([
-        bundle.write({
-            format: 'iife',
-            dest: path.join(entryDist, 'jq-dom.js')
-        }),
-        bundle2.write({
-            format: 'iife',
-            dest: path.join(entryDist, 'jq-http.js')
-        }),
-        bundle3.write({
-            format: 'iife',
-            dest: path.join(entryDist, 'njk.js')
-        })
-    ])
+  let bundle = await rollup({
+    input: './src/wc-host.js',
+    plugins: rollUpPlugins
+  })
+  return bundle.write({
+    format: 'iife',
+    file: path.join(entryDist, 'wc-jq.js')
+  })
 })
 
 gulp.task('build-polyfill', async function buildBaseWC() {
-    let bundle = await rollup({
-        entry: './src/wc-polyfill.js',
-        plugins: rollUpPlugins
-    })
-    return bundle.write({
-        format: 'iife',
-        dest: path.join(entryDist, 'wc-polyfill.js')
-    })
+  let bundle = await rollup({
+    input: './src/wc-polyfill.js',
+    plugins: rollUpPlugins
+  })
+  return bundle.write({
+    format: 'iife',
+    file: path.join(entryDist, 'wc-polyfill.js')
+  })
 })
 
-gulp.task('concat-mini', () => {
-    return gulp.src(['./dist/wc-core.js', './dist/wc-polyfill.js', './dist/jq-dom.js', './dist/jq-http.js', './dist/njk.js'])
-        .pipe(concat('wc-jq-njk.js'))
-        .pipe(gulp.dest('./dist'))
-        .pipe(jsmin({ compress: true }))
-        .pipe(rename(path => {
-            path.basename += '.min'
-            path.extname = '.js'
-        }))
-        .pipe(gulp.dest('./dist'))
+gulp.task('min-js', () => {
+  return gulp.src(['./dist/wc-polyfill.js', './dist/wc-jq.js'])
+    .pipe(jsmin({ compress: true }))
+    .pipe(rename(path => {
+      path.basename += '.min'
+      path.extname = '.js'
+    }))
+    .pipe(gulp.dest('./dist'))
 })
 
-gulp.task('clean-unuse', () => {
-    return gulp.src(['./dist/wc-polyfill.js', './dist/jq-dom.js', './dist/jq-http.js', './dist/njk.js'])
-        .pipe(clean())
+gulp.task('full-wc', () => {
+  return gulp.src(['./dist/wc-polyfill.js', './dist/wc-jq.js'])
+    .pipe(concat('wc-jq-full.js'))
+    .pipe(gulp.dest('./dist'))
+    .pipe(jsmin({ compress: true }))
+    .pipe(rename(path => {
+      path.basename += '.min'
+      path.extname = '.js'
+    }))
+    .pipe(gulp.dest('./dist'))
 })
 
 gulp.task('default', gulp.series(
-    'clean',
-    gulp.parallel('build-polyfill', 'build-base', 'build-plugins'),
-    'concat-mini',
-    'clean-unuse'
-    // ,gulp.parallel.apply(gulp, concatName),
+  'clean',
+  gulp.parallel('build-polyfill', 'build-base'),
+  'min-js'
+))
 
-    // () => gulp.src(['./dist/wc.js', './dist/wc-*.js'])
-    // .pipe(concat('wc-' + concatName.join('-') + '.js'))
-    // .pipe(gulp.dest(entryDist)),
-
-    // () => gulp.src('./dist/wc-' + concatName.join('-') + '.js')
-    // .pipe(jsmin({ compress: true }))
-    // .pipe(rename(path => {
-    //     path.basename += '.min'
-    //     path.extname = '.js'
-    // }))
-    // .pipe(gulp.dest(entryDist))
+gulp.task('full', gulp.series(
+  'clean',
+  gulp.parallel('build-polyfill', 'build-base'),
+  'full-wc'
 ))
 
 gulp.task('localsrv', () => {
-    browserSync.init({
-        server: {
-            baseDir: './'
-        }
-    })
+  browserSync.init({
+    server: {
+      baseDir: './'
+    }
+  })
 })

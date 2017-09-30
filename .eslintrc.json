@@ -1,40 +1,47 @@
 {
-    "env": {
-        "node": false,
-        "commonjs": true,
-        "browser": true,
-        "es6": true,
-        "mocha": true,
-        "shelljs": true,
-        "jquery": true,
-        "worker": true,
-        "amd": true
-    },
-    "parserOptions": {
-        "sourceType": "module",
-        "ecmaVersion": 2017,
-        "ecmaFeatures": {
-            "impliedStrict": true,
-            "jsx": false
-        }
-    },
-    "rules": {
-        "no-undefined": "off",
-        "no-undef": "error",
-        "no-var": "error",
-        "one-var": "off",
-        "radix": "error",
-        "strict": ["off", "global"],
-        "semi": ["error", "never"],
-        "indent": ["off", 4],
-        "linebreak-style": ["error", "unix"],
-        "quotes": ["error", "single", "avoid-escape"],
-        "curly": "off",
-        "camelcase": "warn",
-        "space-before-function-paren": "off",
-        "complexity": "warn",
-        "eol-last": "off",
-        "no-multiple-empty-lines": "warn",
-        "no-unused-vars": "error"
+  "env": {
+    "node": true,
+    "commonjs": true,
+    "browser": true,
+    "es6": true,
+    "mocha": true,
+    "shelljs": true,
+    "jquery": true,
+    "worker": true,
+    "amd": true
+  },
+  "parserOptions": {
+    "sourceType": "module",
+    "ecmaVersion": 2017,
+    "ecmaFeatures": {
+      "impliedStrict": true,
+      "jsx": false
     }
+  },
+  "globals": {
+    "doT": true,
+    "nunjucks": true,
+    "$": true,
+    "jQuery": true,
+    "wc": true
+  },
+  "rules": {
+    "no-undefined": "off",
+    "no-undef": "error",
+    "no-var": "warn",
+    "one-var": "off",
+    "radix": "error",
+    "strict": ["off", "global"],
+    "semi": ["error", "never"],
+    "indent": ["off", 4],
+    "linebreak-style": ["off", "unix"],
+    "quotes": ["error", "single", "avoid-escape"],
+    "curly": "off",
+    "camelcase": "warn",
+    "space-before-function-paren": "off",
+    "complexity": ["warn", 50],
+    "eol-last": "off",
+    "no-multiple-empty-lines": "warn",
+    "no-unused-vars": "error"
+  }
 }

@@ -49,7 +49,7 @@ function throttle(func, wait, options) {
     if (!options)
         options = {}
 
-    let later = function() {
+    let later = function () {
         previous = options.leading === false ? 0 : new Date().getTime()
         timeout = null
         result = func.apply(context, args)
@@ -57,7 +57,7 @@ function throttle(func, wait, options) {
             context = args = null
     }
 
-    return function() {
+    return function () {
         let now = new Date().getTime()
         if (!previous && options.leading === false)
             previous = now
@@ -80,7 +80,7 @@ function throttle(func, wait, options) {
     }
 }
 
-wc.web('$', function(selector) {
+wc.web('$', function (selector) {
     let ctx = this.ctx
     if (!ctx) return window.$(selector)
 

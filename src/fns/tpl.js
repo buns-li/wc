@@ -1,0 +1,1 @@
+export default (tplname, context, isRaw) => window[isRaw ? 'renderString' : 'render'](tplname, context)

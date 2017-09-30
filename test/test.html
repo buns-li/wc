@@ -2,39 +2,33 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title></title>
-    <link rel="stylesheet" href="">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title></title>
+  <link rel="stylesheet" href="">
 </head>
 
 <body>
-    <div id="div_0" style="width:100px;height: 100px; border:1px solid red;position:absolute;top:100px;left:700px;">
-    </div>
-    <div id="div_1" style="width:100px;height: 100px; border:1px solid red;">
-    </div>
-    <script src="//cdn.bootcss.com/nunjucks/3.0.1/nunjucks.min.js"></script>
-    <script src="//cdn.bootcss.com/jquery/3.2.1/jquery.slim.min.js"></script>
-    <script src="/dist/wc-jq-njk.js"></script>
-    <script src="./cmps/cmp1.js"></script>
-    <script src="./cmps/cmp2.js"></script>
-    <script>
-        wc.config({
-            debug:true,
-            threshold:100
-        })
+  <div id="cmp1" style="width:100px;height: 100px; border:1px solid red;position:absolute;top:100px;left:700px;">
+  </div>
+  <div id="cmp2" style="width:100px;height: 100px; border:1px solid red;">
+  </div>
+  <script src="//cdn.bootcss.com/nunjucks/3.0.1/nunjucks.min.js"></script>
+  <script src="//cdn.bootcss.com/jquery/3.2.1/jquery.slim.min.js"></script>
+  <script src="/dist/wc-jq.js"></script>
+  <script src="./cmps/cmp1.js"></script>
+  <script src="./cmps/cmp2.js"></script>
+  <script>
+    wc.config({
+      debug: true,
+      threshold: 100
+    })
 
-        wc.web('tpl',function(tplname,context){
-            return tplname
-        })
+    wc.fn('tpl', (tplname, context, isRaw) => nunjucks[isRaw ? 'renderString' : 'render'](tplname, context))
 
-        wc('cmp1').at('#div_0',{}).sub('cmp2','sendlove','recieve_love')
-        wc('cmp2').at('#div_1')
-
-        $(document).ready(function(){
-            console.log('test')
-        })
-    </script>
+    wc('cmp1', true).sub('cmp2', 'sendlove', 'recieve_love')
+    wc('cmp2', true)
+  </script>
 </body>
 
 </html>

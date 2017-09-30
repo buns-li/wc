@@ -1,0 +1,23 @@
+{
+  "name": "wc",
+  "version": "1.0.0",
+  "description": "a web component mini lib",
+  "main": "gulpfile.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/buns-li/wc.git"
+  },
+  "keywords": ["wc", "component", "web_components"],
+  "author": "buns-li",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/buns-li/wc/issues"
+  },
+  "homepage": "https://github.com/buns-li/wc#readme"
+}

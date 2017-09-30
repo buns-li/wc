@@ -229,3 +229,40 @@ TODO:
 1. url操作
 2. 拖拽
 3. `body`、`head`、`script`、`link`、`html`标签的操作
+
+
+
+
+
+
+
+
+页面以组件方式划分, 组件与组件之间的交互都是通过主题的发布订阅来实现解耦,组件有状态机模式
+
+组件是寄宿在页面中的,所以页面的一些变化会通过对应的钩子映射到组件上。
+
+ready,onLoad,onScroll,onResize,beforeLeave,
+
+self.hook('ready',function(){
+
+})
+
+//注册交互事件
+self.on('CHANGE_COLOR',function(data){
+
+})
+
+状态机: self.fsm.transition()
+
+模板: self.tpl()
+
+网络请求: self.http(url)
+
+缓存: self.cache()
+
+动画: self.anim()
+
+DOM操作: self.$()
+
+宿主级数据获取: self.gdata("offsetHeight")
+

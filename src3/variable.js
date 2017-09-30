@@ -4,7 +4,7 @@
  *  数据结构要求:
  *  1. 能够实现订阅方所属组件id的快速定位
  *  2. 能够包含到从发布方到订阅方的过程信息
- * struct:
+ * format:
  *  {
  *      "subscriber.cmp":{
  *             "subscriber.evt":[{
@@ -33,32 +33,30 @@ export const cmps = {}
 export const remainCmps = []
 
 /**
- * 框架的配置信息
- * @type {Object}
+ * 浏览器宿主允许被订阅的主题
+ * @type {Array}
  */
-export const conf = {}
+export const browserActions = [
+    'ready',
+    'loaded',
+    'scroll',
+    'resize'
+]
 
 /**
  * 可以被允许注入的
  * @type {Array}
  */
-export const allowFns = [
-  '$',
-  'http',
-  'tpl',
-  'anim',
-  'cache',
-  'util'
+export const allowWeblize = [
+    '$',
+    'http',
+    'tpl',
+    'anim',
+    'cache'
 ]
 
 /**
- * 浏览器宿主允许被订阅的主题
- * @type {Array}
+ * 框架的配置信息
+ * @type {Object}
  */
-export const hookActions = [
-  'ready',
-  'onLoad',
-  'onScroll',
-  'onResize',
-  'beforeLeave'
-]
+export const conf = {}
