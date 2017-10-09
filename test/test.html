@@ -11,13 +11,14 @@
 <body>
   <div id="cmp1" style="width:100px;height: 100px; border:1px solid red;position:absolute;top:100px;left:700px;">
   </div>
-  <div id="cmp2" style="width:100px;height: 100px; border:1px solid red;">
+  <div id="cmp_2" style="width:100px;height: 100px; border:1px solid red;">
   </div>
   <script src="//cdn.bootcss.com/nunjucks/3.0.1/nunjucks.min.js"></script>
   <script src="//cdn.bootcss.com/jquery/3.2.1/jquery.slim.min.js"></script>
   <script src="/dist/wc-jq.js"></script>
   <script src="./cmps/cmp1.js"></script>
   <script src="./cmps/cmp2.js"></script>
+  <script src="./cmps/cmp-fsm.js"></script>
   <script>
     wc.config({
       debug: true,
@@ -25,9 +26,9 @@
     })
 
     wc.fn('tpl', (tplname, context, isRaw) => nunjucks[isRaw ? 'renderString' : 'render'](tplname, context))
-
-    wc('cmp1', true).sub('cmp2', 'sendlove', 'recieve_love')
-    wc('cmp2', true)
+    
+    wc('cmp1').sub('cmp2', 'sendlove', 'recieve_love')
+    wc('cmp2',false).at('#cmp_2')
   </script>
 </body>
 

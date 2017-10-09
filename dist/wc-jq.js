@@ -372,6 +372,59 @@ EventTracer.set = function (tracer) {
   }
 };
 
+function FSM(state) {
+  this._trans = {};
+  this._prev = null;
+  this._state = state;
+}
+
+FSM.prototype = {
+  constructor: FSM,
+
+  trans: function trans(config) {
+
+    var trans = this._trans;
+
+    var state = this._state === config.from ? this._state : config.from;
+
+    var kv = trans[state] || (trans[state] = {});
+
+    kv[config.name] = config;
+
+    return this;
+  },
+
+  transit: function transit() {
+
+    var args = Array.prototype.slice.apply(arguments);
+
+    var trankv = this._trans[this._state];
+
+    if (!trankv) {
+      throw new Error('当前组件不具备从状态-' + this._state + '开始的变迁');
+    }
+
+    var tran = trankv[args.shift()];
+
+    if (!tran) return;
+
+    var from = tran.from;
+
+    if (from === '*' || from === this._state || from.includes(this._state)) {
+
+      this._prev = this._state;
+
+      tran.before && tran.before.apply(null, args);
+
+      this._state = tran.to;
+
+      tran.after && tran.after.apply(null, args);
+    } else {
+      throw new Error('组件不能从' + this._state + '转换至' + tran.to + '状态');
+    }
+  }
+};
+
 /**
  * 组件的定义
  *
@@ -452,11 +505,11 @@ Component.prototype = {
 
     var fullEvtName = Component.nameFn(this.id, key);
 
-    ebus.on(fullEvtName, cb.bind(Component.eventRicher), key === 'ready' || key === 'onLoad');
+    ebus.on(fullEvtName, cb.bind(Component.eventRicher), key === 'ready' || key === 'onLoad'
 
     //注册组件__env__与此组件的关联关系
 
-    var tracer = EventTracer.get(Component.nameFn('__env__', key));
+    );var tracer = EventTracer.get(Component.nameFn('__env__', key));
     if (!tracer) {
       EventTracer.set(tracer = new EventTracer(key, '__env__'));
     }
@@ -491,10 +544,10 @@ Component.prototype = {
 
     var fullEvtName = Component.nameFn(this.id, evtName);
 
-    var tracer = EventTracer.get(fullEvtName);
+    var tracer = EventTracer.get(fullEvtName
 
     //没有找到此发布方事件的发布订阅关系
-    if (!tracer) return this;
+    );if (!tracer) return this;
 
     var subscribersKV = tracer.subs,
         totalSubLen = 0,
@@ -508,10 +561,10 @@ Component.prototype = {
     if (!subscribersKV) return this;
 
     //生成针对当前组件正在发布事件的追踪记录器,用于记录此次交互的轨迹
-    var tracerRecorder = tracer.record(fullEvtName, this.id);
+    var tracerRecorder = tracer.record(fullEvtName, this.id
 
     //记录需要fetch的组件数组
-    var waitingFetchCMPs = [];
+    );var waitingFetchCMPs = [];
 
     for (subCmpID in subscribersKV) {
 
@@ -546,10 +599,10 @@ Component.prototype = {
       if (subCmp.state === 0 || subCmp.state === 1) {
         var _ret = function () {
 
-          if (subCmp.state === 0) waitingFetchCMPs.push(subCmpID);
+          if (subCmp.state === 0) waitingFetchCMPs.push(subCmpID
 
           //寻找交互订阅方缓冲区中的订阅方事件映射
-          waitingSubEvtMapKV = waitingSubscribers[subCmpID];
+          );waitingSubEvtMapKV = waitingSubscribers[subCmpID];
 
           if (!waitingSubEvtMapKV) return 'continue';
 
@@ -631,6 +684,16 @@ Component.prototype = {
 
     tracer.sublen = totalSubLen;
     tracer.cb = cb;
+  },
+  /**
+   * 呼叫自身内部主题
+   * 
+   * @param {String} evtName - 内部"on"定义的事件名称
+   * @param {Object|Array<Object>} [data] - 事件所需传递的参数
+   */
+  callSelf: function callSelf(evtName, data) {
+    ebus.emit(Component.nameFn(this.id, evtName), data);
+    return this;
   }
 
   /**
@@ -657,6 +720,10 @@ Component.prototype = {
    * 装载组件
    */
 };Component.load = function (cmp) {
+
+  !cmp.fsm && (cmp.fsm = function (state) {
+    return new FSM(state);
+  });
 
   var factory = cmp.fac;
 
@@ -741,7 +808,7 @@ var wcExt = {
 
     this.cmp = cmps[id] || (cmps[id] = new Component(id));
 
-    if (ctxSync) this.cmp.ctx = '#' + id;
+    if (ctxSync === true || ctxSync === undefined) this.cmp.ctx = '#' + id;
 
     return this;
   },
@@ -751,7 +818,7 @@ var wcExt = {
    * 
    * @param {String|Array} [ctx] 当前组件将要寄宿在页面的容器的筛选条件
    */
-  host: function host(ctx, options) {
+  at: function at(ctx, options) {
     var self = this;
 
     if (!self.cmp) return self;
@@ -896,6 +963,12 @@ wc.version = '0.0.1';
 wc.define = function (id, opts, factory) {
   if (!id) return;
   var cmp = cmps[id];
+
+  if (!factory && isFunction(opts)) {
+    factory = opts;
+    opts = null;
+  }
+
   if (!cmp) {
     cmp = cmps[id] = new Component(id, opts, factory);
   } else {
@@ -1013,17 +1086,19 @@ var jQ = window.$ || window.jQuery;
  * 
  * @export
  * @param {String} selector - 筛选器(类似jquery的selector) 
- * @returns 
+ * @returns jQuery对象
  */
 function $$1(selector) {
 
-  var ctx = this.ctx;
+  var ctx = this.ctx || '#' + this.id;
 
   if (!ctx) return jQ(selector);
 
-  if (!selector) return jQ(this.ctx);
+  if (!selector) return jQ(ctx);
 
-  return jQ(this.ctx + ' ' + selector);
+  if (selector.nodeType) return jQ(selector);
+
+  return jQ(ctx + ' ' + selector);
 }
 
 /**
@@ -1107,18 +1182,18 @@ function loadJSCSS(settings, cb) {
   isCSS ? node.href = url : node.src = url;
 
   // ref: #185 & http://dev.jquery.com/ticket/2709
-  baseElement ? head.insertBefore(node, baseElement) : head.appendChild(node);
+  baseElement ? head.insertBefore(node, baseElement) : head.appendChild(node
 
   // 借鉴seajs
-  function addOnload(nodeP, callback, uri, isCSS) {
+  );function addOnload(nodeP, callback, uri, isCSS) {
     var supportOnload = 'onload' in nodeP;
 
     // for Old WebKit and Old Firefox
     if (isCSS && (isOldWebKit || !supportOnload)) {
       setTimeout(function () {
         pollCss(nodeP, callback);
-      }, 1); // Begin after nodeP insertion
-      return;
+      }, 1 // Begin after nodeP insertion
+      );return;
     }
 
     if (supportOnload) {
@@ -1244,6 +1319,7 @@ function lazyloadCmp() {
         case 0:
           //unftech
           if (cmp.state === 0 && cmp.ctx && cmp.http && isInVisualArea && isInVisualArea(cmp.ctx)) waitingFetchCMPs.push(cmp.id);
+          break;
         case 1:
           //fetching
           remainCmps.push(cmp.id);
@@ -1309,9 +1385,8 @@ var $w = jQ(window).on('load', function () {
   return lazyloadCmp() && cmps.__env__.pub('onResize', [$w.width(), $w.height(), $doc.width(), $doc.height()]);
 }, 300)).on('scroll', throttle(function () {
   return lazyloadCmp() && cmps.__env__.pub('onScroll', [$w.scrollTop(), $w.scrollLeft()]);
-}, 300)).on('beforeunload', function () {
-  cmps.__env__.pub('beforeLeave');
-  return 'beforeleave';
+}, 300)).on('beforeunload', function (e) {
+  return cmps.__env__.pub('beforeLeave', e);
 });
 
 }());

@@ -48,6 +48,12 @@ wc.version = '0.0.1'
 wc.define = function(id, opts, factory) {
   if (!id) return
   let cmp = cmps[id]
+
+  if (!factory && isFunction(opts)) {
+    factory = opts
+    opts = null
+  }
+
   if (!cmp) {
     cmp = cmps[id] = new Component(id, opts, factory)
   } else {

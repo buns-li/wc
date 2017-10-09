@@ -1,50 +1,53 @@
-export default function FSM() {
+export default function FSM(state) {
   this._trans = {}
+  this._prev = null
+  this._state = state
 }
 
 FSM.prototype = {
   constructor: FSM,
 
-  init: function (state) {
-      this._prev = null
-      this._state = state
+  trans: function(config) {
+
+    let trans = this._trans
+
+    let state = this._state === config.from ? this._state : config.from
+
+    let kv = trans[state] || (trans[state] = {})
+
+    kv[config.name] = config
+
+    return this
   },
 
-  trans: function (name, from, to, before, after) {
-      let trans = this._trans
+  transit: function() {
 
-      trans[name] = {
-          from: from,
-          to: to,
-          before: before,
-          after: after
-      }
+    let args = Array.prototype.slice.apply(arguments)
 
-      return this
-  },
+    let trankv = this._trans[this._state]
 
-  transit: function () {
+    if (!trankv) {
+      throw new Error('当前组件不具备从状态-' + this._state + '开始的变迁')
+    }
 
-      let args = Array.prototype.slice.apply(arguments)
+    let tran = trankv[args.shift()]
 
-      let tran = this._trans[args.shift()]
+    if (!tran) return
 
-      if (!tran) return
+    let from = tran.from
 
-      let from = tran.from
+    if (from === '*' || from === this._state || from.includes(this._state)) {
 
-      if (from === '*' || from === this._state || from.includes(this._state)) {
+      this._prev = this._state
 
-          this._prev = this._state
+      tran.before && tran.before.apply(null, args)
 
-          tran.before && tran.before.apply(null, args)
+      this._state = tran.to
 
-          this._state = tran.to
+      tran.after && tran.after.apply(null, args)
 
-          tran.after && tran.after.apply(null, args)
-
-      } else {
-          throw new Error('组件不能从' + this._state + '转换至' + tran.to + '状态')
-      }
+    } else {
+      throw new Error('组件不能从' + this._state + '转换至' + tran.to + '状态')
+    }
   }
 }

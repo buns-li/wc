@@ -6,7 +6,6 @@ import Component from './cmp'
 
 import EventTracer from './event-tracer'
 
-
 const wcExt = {
   /**
    * 初始化组件或者补全组件
@@ -20,7 +19,7 @@ const wcExt = {
 
     this.cmp = cmps[id] || (cmps[id] = new Component(id))
 
-    if (ctxSync) this.cmp.ctx = '#' + id
+    if (ctxSync === true || ctxSync === undefined) this.cmp.ctx = '#' + id
 
     return this
   },
@@ -30,7 +29,7 @@ const wcExt = {
    * 
    * @param {String|Array} [ctx] 当前组件将要寄宿在页面的容器的筛选条件
    */
-  host: function(ctx, options) {
+  at: function(ctx, options) {
     let self = this
 
     if (!self.cmp) return self

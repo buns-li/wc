@@ -50,6 +50,7 @@ function lazyloadCmp() {
         case 0: //unftech
           if (cmp.state === 0 && cmp.ctx && cmp.http && dom.isInVisualArea && dom.isInVisualArea(cmp.ctx))
             waitingFetchCMPs.push(cmp.id)
+          break
         case 1: //fetching
           remainCmps.push(cmp.id)
           loadedcmp = false

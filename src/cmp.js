@@ -1,8 +1,12 @@
 import { waitingSubscribers, cmps, conf, hookActions } from './variable'
 
+import { isFunction } from './util'
+
 import ebus from './event-bus'
 
 import EventTracer from './event-tracer'
+
+import FSM from './fsm'
 
 /**
  * 组件的定义
@@ -259,6 +263,19 @@ Component.prototype = {
 
     tracer.sublen = totalSubLen
     tracer.cb = cb
+  },
+  /**
+   * 呼叫自身内部主题
+   * 
+   * @param {String} evtName - 内部"on"定义的事件名称
+   * @param {Object|Array<Object>} [data] - 事件所需传递的参数
+   */
+  callSelf: function(evtName, data) {
+    ebus.emit(
+      Component.nameFn(this.id, evtName),
+      data
+    )
+    return this
   }
 }
 
@@ -288,6 +305,8 @@ Component.eventRicher = {
  * 装载组件
  */
 Component.load = function(cmp) {
+
+  !cmp.fsm && (cmp.fsm = state => new FSM(state))
 
   let factory = cmp.fac
 

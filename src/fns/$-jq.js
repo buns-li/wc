@@ -5,17 +5,19 @@ export const jQ = window.$ || window.jQuery
  * 
  * @export
  * @param {String} selector - 筛选器(类似jquery的selector) 
- * @returns 
+ * @returns jQuery对象
  */
 export function $(selector) {
 
-  let ctx = this.ctx
+  let ctx = (this.ctx || ('#' + this.id))
 
   if (!ctx) return jQ(selector)
 
-  if (!selector) return jQ(this.ctx)
+  if (!selector) return jQ(ctx)
 
-  return jQ(this.ctx + ' ' + selector)
+  if (selector.nodeType) return jQ(selector)
+
+  return jQ(ctx + ' ' + selector)
 }
 
 /**
